@@ -1,4 +1,4 @@
-tkinter: import cv2
+import cv2
 import mediapipe as mp
 import numpy as np
 import pyttsx3
@@ -6,6 +6,7 @@ import pyautogui
 import uiautomation as auto
 import tkinter as tk
 from threading import Thread
+from PIL import Image, ImageTk
 
 pyautogui.FAILSAFE = False
 
@@ -19,6 +20,7 @@ mp_face_mesh = mp.solutions.face_mesh.FaceMesh(refine_landmarks=True)
 # Variables globales
 is_tracking = False  # Controla si el seguimiento está activado o no
 last_spoken = ""  # Recuerda el último elemento anunciado
+cap = cv2.VideoCapture(0)  # Iniciar la captura de video
 
 # Función para calcular el punto de la mirada en la pantalla
 def get_gaze_position(landmarks, img_shape):
@@ -40,6 +42,19 @@ def get_gaze_position(landmarks, img_shape):
     screen_x = int(((iw - gaze_point[0]) / iw * pyautogui.size().width))
     screen_y = int(gaze_point[1] / ih * pyautogui.size().height)
     return (screen_x, screen_y)
+
+# Función para mostrar la previsualización de la cámara en la ventana de Tkinter
+def update_camera_preview():
+    ret, frame = cap.read()
+    if ret:
+        # Convertir el frame a formato RGB y luego a una imagen compatible con Tkinter
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        img = Image.fromarray(frame)
+        imgtk = ImageTk.PhotoImage(image=img)
+        camera_label.imgtk = imgtk
+        camera_label.configure(image=imgtk)
+    if is_tracking:
+        camera_label.after(10, update_camera_preview)  # Llamar a sí mismo continuamente
 
 # Función para suavizar el movimiento del cursor
 def smooth_cursor(current_position, previous_position, smoothing_factor=0.2):
@@ -69,7 +84,6 @@ def get_element_in_focus(screen_point):
 # Función para realizar el seguimiento ocular
 def start_tracking():
     global is_tracking
-    cap = cv2.VideoCapture(0)
     previous_position = (0, 0)
     
     while is_tracking:
@@ -90,11 +104,6 @@ def start_tracking():
 
                     # Detectar el elemento en el punto de mirada
                     get_element_in_focus(smooth_point)
-        
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
 
 # Función para iniciar el seguimiento en un hilo separado
 def initiate_tracking():
@@ -103,6 +112,7 @@ def initiate_tracking():
         is_tracking = True
         tracking_thread = Thread(target=start_tracking)
         tracking_thread.start()
+        update_camera_preview()  # Iniciar la previsualización de la cámara
 
 # Función para detener el seguimiento
 def stop_tracking():
@@ -112,8 +122,8 @@ def stop_tracking():
 # Interfaz gráfica con Tkinter
 root = tk.Tk()
 root.title("Control de Seguimiento Ocular")
-window_width = 300
-window_height = 150
+window_width = 600
+window_height = 400
 
 # Calcular la posición para centrar la ventana en la pantalla
 screen_width = root.winfo_screenwidth()
@@ -125,6 +135,9 @@ y_position = (screen_height // 2) - (window_height // 2)
 # Configurar tamaño y posición de la ventana
 root.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 
+# Label para mostrar la previsualización de la cámara
+camera_label = tk.Label(root)
+camera_label.pack()
 
 # Botones para iniciar y detener el seguimiento
 start_button = tk.Button(root, text="Iniciar Seguimiento", command=initiate_tracking)
@@ -135,3 +148,7 @@ stop_button.pack(pady=10)
 
 # Iniciar la interfaz de Tkinter
 root.mainloop()
+
+# Liberar la cámara al cerrar la ventana
+cap.release()
+cv2.destroyAllWindows()
