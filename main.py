@@ -22,6 +22,14 @@ is_tracking = False  # Controla si el seguimiento está activado o no
 last_spoken = ""  # Recuerda el último elemento anunciado
 cap = cv2.VideoCapture(0)  # Iniciar la captura de video
 
+# Sensibilidad inicial
+sensitivity = 1.0
+
+# Función para actualizar la sensibilidad en tiempo real
+def update_sensitivity(val):
+    global sensitivity
+    sensitivity = float(val)
+
 # Función para calcular el punto de la mirada en la pantalla
 def get_gaze_position(landmarks, img_shape):
     ih, iw, _ = img_shape
@@ -38,9 +46,9 @@ def get_gaze_position(landmarks, img_shape):
     gaze_point = ((left_eye_center[0] + right_eye_center[0]) // 2,
                   (left_eye_center[1] + right_eye_center[1]) // 2)
     
-    # Ajustar las coordenadas de pantalla aplicando sensibilidad en ambos ejes
-    screen_x = int(((iw - gaze_point[0]) / iw * pyautogui.size().width))
-    screen_y = int(gaze_point[1] / ih * pyautogui.size().height)
+    # Ajustar las coordenadas de pantalla aplicando la sensibilidad
+    screen_x = int(((iw - gaze_point[0]) / iw * pyautogui.size().width) * sensitivity)
+    screen_y = int(gaze_point[1] / ih * pyautogui.size().height * sensitivity)
     return (screen_x, screen_y)
 
 # Función para mostrar la previsualización de la cámara en la ventana de Tkinter
@@ -124,7 +132,7 @@ def stop_tracking():
 root = tk.Tk()
 root.title("Control de Seguimiento Ocular")
 window_width = 400
-window_height = 600
+window_height = 700
 
 # Calcular la posición para centrar la ventana en la pantalla
 screen_width = root.winfo_screenwidth()
@@ -139,6 +147,11 @@ root.geometry(f"{window_width}x{window_height}+{x_position}+{y_position}")
 # Label para mostrar la previsualización de la cámara
 camera_label = tk.Label(root)
 camera_label.pack()
+
+# Slider para ajustar la sensibilidad
+sensitivity_slider = tk.Scale(root, from_=0.5, to=5.0, resolution=0.1, orient='horizontal', label='Sensibilidad', command=update_sensitivity)
+sensitivity_slider.set(1.0)  # Sensibilidad inicial
+sensitivity_slider.pack(pady=10)
 
 # Botones para iniciar y detener el seguimiento
 start_button = tk.Button(root, text="Iniciar Seguimiento", command=initiate_tracking)
