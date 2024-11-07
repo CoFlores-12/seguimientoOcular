@@ -48,6 +48,7 @@ def update_camera_preview():
     ret, frame = cap.read()
     if ret:
         # Convertir el frame a formato RGB y luego a una imagen compatible con Tkinter
+        frame = cv2.flip(frame, 1)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(frame)
         imgtk = ImageTk.PhotoImage(image=img)
