@@ -122,8 +122,8 @@ def stop_tracking():
 # Interfaz gráfica con Tkinter
 root = tk.Tk()
 root.title("Control de Seguimiento Ocular")
-window_width = 600
-window_height = 400
+window_width = 400
+window_height = 600
 
 # Calcular la posición para centrar la ventana en la pantalla
 screen_width = root.winfo_screenwidth()
